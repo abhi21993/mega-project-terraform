@@ -35,7 +35,7 @@ resource "aws_route_table" "devopshack_route_table" {
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.devopsshack_igw.id
+    gateway_id = aws_internet_gateway.devopshack_igw.id
   }
 
   tags = {
@@ -50,7 +50,7 @@ resource "aws_route_table_association" "devopshack_association" {
 }
 
 resource "aws_security_group" "devopshack_cluster_sg" {
-  vpc_id = aws_vpc.devopsshack_vpc.id
+  vpc_id = aws_vpc.devopshack_vpc.id
 
   egress {
     from_port   = 0
