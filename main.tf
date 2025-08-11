@@ -2,55 +2,55 @@ provider "aws" {
   region = "ap-south-1"
 }
 
-resource "aws_vpc" "devopshack_vpc" {
+resource "aws_vpc" "abhiproject_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "devopshack-vpc"
+    Name = "abhiproject-vpc"
   }
 }
 
-resource "aws_subnet" "devopshack_subnet" {
+resource "aws_subnet" "abhiproject_subnet" {
   count = 2
-  vpc_id                  = aws_vpc.devopshack_vpc.id
-  cidr_block              = cidrsubnet(aws_vpc.devopshack_vpc.cidr_block, 8, count.index)
+  vpc_id                  = aws_vpc.abhiproject_vpc.id
+  cidr_block              = cidrsubnet(aws_vpc.abhiproject_vpc.cidr_block, 8, count.index)
   availability_zone       = element(["ap-south-1a", "ap-south-1b"], count.index)
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "devopshack-subnet-${count.index}"
+    Name = "abhiproject-subnet-${count.index}"
   }
 }
 
-resource "aws_internet_gateway" "devopshack_igw" {
-  vpc_id = aws_vpc.devopshack_vpc.id
+resource "aws_internet_gateway" "abhiproject_igw" {
+  vpc_id = aws_vpc.abhiproject_vpc.id
 
   tags = {
-    Name = "devopshack-igw"
+    Name = "abhiproject-igw"
   }
 }
 
-resource "aws_route_table" "devopshack_route_table" {
-  vpc_id = aws_vpc.devopshack_vpc.id
+resource "aws_route_table" "abhiproject_route_table" {
+  vpc_id = aws_vpc.abhiproject_vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.devopshack_igw.id
+    gateway_id = aws_internet_gateway.abhiproject_igw.id
   }
 
   tags = {
-    Name = "devopshack-route-table"
+    Name = "abhiproject-route-table"
   }
 }
 
-resource "aws_route_table_association" "devopshack_association" {
+resource "aws_route_table_association" "abhiproject_association" {
   count          = 2
-  subnet_id      = aws_subnet.devopshack_subnet[count.index].id
-  route_table_id = aws_route_table.devopshack_route_table.id
+  subnet_id      = aws_subnet.abhiproject_subnet[count.index].id
+  route_table_id = aws_route_table.abhiproject_route_table.id
 }
 
-resource "aws_security_group" "devopshack_cluster_sg" {
-  vpc_id = aws_vpc.devopshack_vpc.id
+resource "aws_security_group" "abhiproject_cluster_sg" {
+  vpc_id = aws_vpc.abhiproject_vpc.id
 
   egress {
     from_port   = 0
@@ -60,12 +60,12 @@ resource "aws_security_group" "devopshack_cluster_sg" {
   }
 
   tags = {
-    Name = "devopshack-cluster-sg"
+    Name = "abhiproject-cluster-sg"
   }
 }
 
-resource "aws_security_group" "devopshack_node_sg" {
-  vpc_id = aws_vpc.devopshack_vpc.id
+resource "aws_security_group" "abhiproject_node_sg" {
+  vpc_id = aws_vpc.abhiproject_vpc.id
 
   ingress {
     from_port   = 0
@@ -82,23 +82,23 @@ resource "aws_security_group" "devopshack_node_sg" {
   }
 
   tags = {
-    Name = "devopshack-node-sg"
+    Name = "abhiproject-node-sg"
   }
 }
 
-resource "aws_eks_cluster" "devopshack" {
-  name     = "devopshack-cluster"
-  role_arn = aws_iam_role.devopshack_cluster_role.arn
+resource "aws_eks_cluster" "abhiproject" {
+  name     = "abhiproject-cluster"
+  role_arn = aws_iam_role.abhiproject_cluster_role.arn
 
   vpc_config {
-    subnet_ids         = aws_subnet.devopshack_subnet[*].id
-    security_group_ids = [aws_security_group.devopshack_cluster_sg.id]
+    subnet_ids         = aws_subnet.abhiproject_subnet[*].id
+    security_group_ids = [aws_security_group.abhiproject_cluster_sg.id]
   }
 }
 
 
 resource "aws_eks_addon" "ebs_csi_driver" {
-  cluster_name    = aws_eks_cluster.devopshack.name
+  cluster_name    = aws_eks_cluster.abhiproject.name
   addon_name      = "aws-ebs-csi-driver"
   
   resolve_conflicts_on_create = "OVERWRITE"
@@ -106,11 +106,11 @@ resource "aws_eks_addon" "ebs_csi_driver" {
 }
 
 
-resource "aws_eks_node_group" "devopshack" {
-  cluster_name    = aws_eks_cluster.devopshack.name
-  node_group_name = "devopshack-node-group"
-  node_role_arn   = aws_iam_role.devopshack_node_group_role.arn
-  subnet_ids      = aws_subnet.devopshack_subnet[*].id
+resource "aws_eks_node_group" "abhiproject" {
+  cluster_name    = aws_eks_cluster.abhiproject.name
+  node_group_name = "abhiproject-node-group"
+  node_role_arn   = aws_iam_role.abhiproject_node_group_role.arn
+  subnet_ids      = aws_subnet.abhiproject_subnet[*].id
 
   scaling_config {
     desired_size = 3
@@ -122,12 +122,12 @@ resource "aws_eks_node_group" "devopshack" {
 
   remote_access {
     ec2_ssh_key = var.ssh_key_name
-    source_security_group_ids = [aws_security_group.devopshack_node_sg.id]
+    source_security_group_ids = [aws_security_group.abhiproject_node_sg.id]
   }
 }
 
-resource "aws_iam_role" "devopshack_cluster_role" {
-  name = "devopshack-cluster-role"
+resource "aws_iam_role" "abhiproject_cluster_role" {
+  name = "abhiproject-cluster-role"
 
   assume_role_policy = <<EOF
 {
@@ -145,13 +145,13 @@ resource "aws_iam_role" "devopshack_cluster_role" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "devopshack_cluster_role_policy" {
-  role       = aws_iam_role.devopshack_cluster_role.name
+resource "aws_iam_role_policy_attachment" "abhiproject_cluster_role_policy" {
+  role       = aws_iam_role.abhiproject_cluster_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 
-resource "aws_iam_role" "devopshack_node_group_role" {
-  name = "devopshack-node-group-role"
+resource "aws_iam_role" "abhiproject_node_group_role" {
+  name = "abhiproject-node-group-role"
 
   assume_role_policy = <<EOF
 {
@@ -169,22 +169,22 @@ resource "aws_iam_role" "devopshack_node_group_role" {
 EOF
 }
 
-resource "aws_iam_role_policy_attachment" "devopshack_node_group_role_policy" {
-  role       = aws_iam_role.devopshack_node_group_role.name
+resource "aws_iam_role_policy_attachment" "abhiproject_node_group_role_policy" {
+  role       = aws_iam_role.abhiproject_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
-resource "aws_iam_role_policy_attachment" "devopshack_node_group_cni_policy" {
-  role       = aws_iam_role.devopshack_node_group_role.name
+resource "aws_iam_role_policy_attachment" "abhiproject_node_group_cni_policy" {
+  role       = aws_iam_role.abhiproject_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
-resource "aws_iam_role_policy_attachment" "devopshack_node_group_registry_policy" {
-  role       = aws_iam_role.devopshack_node_group_role.name
+resource "aws_iam_role_policy_attachment" "abhiproject_node_group_registry_policy" {
+  role       = aws_iam_role.abhiproject_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-resource "aws_iam_role_policy_attachment" "devopshack_node_group_ebs_policy" {
-  role       = aws_iam_role.devopshack_node_group_role.name
+resource "aws_iam_role_policy_attachment" "abhiproject_node_group_ebs_policy" {
+  role       = aws_iam_role.abhiproject_node_group_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
